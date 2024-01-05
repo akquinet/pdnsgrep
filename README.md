@@ -8,7 +8,8 @@ The wildcard `*` can be used as a placeholder in search_term and the `?` charact
 
 Under [Releases](https://github.com/akquinet/pdnsgrep/releases) the binary can be downloaded directly.
 
-Alternatively, clone with `git` and run `go install .` in the directory.
+Alternatively, you can install it with go: `go install github.com/akquinet/pdnsgrep@latest`
+
 
 ## Configuration
 
