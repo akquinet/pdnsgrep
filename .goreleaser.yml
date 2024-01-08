@@ -22,12 +22,12 @@ builds:
       - linux
       - darwin
       - windows
-signs:
-  - artifacts: checksum
-    args:
-      [
-        "--batch",
-      ]
+# signs:
+#   - artifacts: checksum
+#     args:
+#       [
+#         "--batch",
+#       ]
 archives:
   - format: zip
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
