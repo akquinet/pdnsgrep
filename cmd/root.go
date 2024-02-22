@@ -151,7 +151,7 @@ func init() {
 	rootCmd.Flags().Bool("zone", false, "search only for zones")
 	rootCmd.Flags().Bool("record", false, "search only for records")
 	rootCmd.Flags().Bool("comment", false, "search only for comments")
-	rootCmd.Flags().StringP("type", "t", "", "type of record (A, AAAA, TXT ....)")
+	rootCmd.Flags().StringP("type", "t", "", "filter type of record (A, AAAA, TXT ....)")
 	rootCmd.Flags().String("show-completion", "", "show completion (bash, zsh, fish, powershell)")
 
 	viper.AutomaticEnv()
