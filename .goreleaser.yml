@@ -38,6 +38,6 @@ checksum:
 release:
   draft: false
 changelog:
-  skip: true
+  disable: true
 snapshot:
   name_template: "{{ .Tag }}-next"
