@@ -10,7 +10,6 @@ Under [Releases](https://github.com/akquinet/pdnsgrep/releases) the binary can b
 
 Alternatively, you can install it with go: `go install github.com/akquinet/pdnsgrep@latest`
 
-
 ## Configuration
 
 ### Environment variables
@@ -76,12 +75,20 @@ example.domain. lab-asa-01.example.domain.  AAAA   [IPv6 Address]   3600
 example.domain. lab-asa-02.example.domain.  AAAA   [IPv6 Address]   3600
 ```
 
+### Disable colored output
+
+```bash
+❯ pdnsgrep "fw" --no-color
+```
+
 ### Piping into less
+
 ```bash
 ❯ pdnsgrep "*firewall*" | less -S
 ```
 
 ### Get only the names
+
 ```bash
 ❯ pdnsgrep "fw" --output raw --no-header | cut -d' ' -f 2 | sort -u
 fw-01.example.domain
@@ -96,4 +103,21 @@ Zone;Name;Type;Content;TTL;Object Type
 example.domain.;fw-1.example.domain.;AAAA;IPv6 Address;3600;record
 example.domain.;fw-1.example.domain.;A;IPv4 Address;3600;record
 ....
+```
+
+### JSON Export
+
+```bash
+❯ pdnsgrep "fw" --output json
+[
+  {
+    "name": "fw-1.example.domain.",
+    "type": "A",
+    "content": "[IPv4 Address]",
+    "object_type": "record",
+    "zone": "example.domain.",
+    "ttl": 3600
+  },
+  ...
+]
 ```
