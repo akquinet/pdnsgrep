@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
@@ -21,9 +22,11 @@ type PDNSSearchResponseItem struct {
 }
 
 type PDNSAPI struct {
-	URL    string
-	APIKey string
-	client http.Client
+	URL       string
+	APIKey    string
+	Client    http.Client
+	Timeout   time.Duration
+	UserAgent string
 }
 
 func (p *PDNSAPI) Search(query string, objectType string) ([]PDNSSearchResponseItem, error) {
@@ -39,7 +42,7 @@ func (p *PDNSAPI) Search(query string, objectType string) ([]PDNSSearchResponseI
 		return nil, err
 	}
 
-	resp, err := p.client.Do(req)
+	resp, err := p.Client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -72,6 +75,10 @@ func (p *PDNSAPI) newRequest(method string, path string, params map[string]any) 
 	req.Header.Add("Accept", "application/json")
 	req.Header.Add("Content-Type", "application/json")
 
+	if p.UserAgent != "" {
+		req.Header.Add("User-Agent", p.UserAgent)
+	}
+
 	q := req.URL.Query()
 	for k, v := range params {
 		q.Add(k, fmt.Sprintf("%v", v))
@@ -83,9 +90,13 @@ func (p *PDNSAPI) newRequest(method string, path string, params map[string]any) 
 
 func NewPDNSAPI(url, apiKey string) *PDNSAPI {
 	return &PDNSAPI{
-		URL:    url,
-		APIKey: apiKey,
-		client: http.Client{},
+		URL:       url,
+		APIKey:    apiKey,
+		UserAgent: "pdnsgrep/1.0",
+		Timeout:   10 * time.Second,
+		Client: http.Client{
+			Timeout: 10 * time.Second,
+		},
 	}
 }
 
