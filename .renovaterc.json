@@ -1,93 +1,35 @@
 {
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
     "extends": [
-        "config:base",
+        "config:recommended",
         ":disableDependencyDashboard"
     ],
-    "reviewers": [],
-    "pre-commit": {
-        "enabled": true
-    },
-    "pip_requirements": {
-        "fileMatch": [
-            "(^|/)([\\w-]*)requirements\\.(txt|pip)$",
-            "(^|/)([\\w-]*)requirements-dev\\.(txt|pip)$"
-        ]
-    },
     "packageRules": [
         {
+            "groupName": "all non-major dependencies",
+            "groupSlug": "all-non-major-updates",
+            "matchPackageNames": [
+                "*"
+            ],
+            "matchUpdateTypes": [
+                "minor",
+                "patch",
+                "digest",
+                "pin"
+            ],
+            "automerge": true,
+            "automergeType": "branch"
+        },
+        {
+            "groupName": "all major dependencies",
+            "groupSlug": "all-major-updates",
+            "matchPackageNames": [
+                "*"
+            ],
             "matchUpdateTypes": [
                 "major"
             ],
             "semanticCommitType": "fix"
-        },
-        {
-            "matchUpdateTypes": [
-                "patch",
-                "pin",
-                "digest"
-            ],
-            "automerge": false
-        },
-        {
-            "matchDatasources": [
-                "pypi"
-            ],
-            "matchFiles": [
-                "requirements-dev.txt"
-            ],
-            "semanticCommitType": "chore"
-        },
-        {
-            "matchDatasources": [
-                "pypi"
-            ],
-            "matchUpdateTypes": [
-                "minor",
-                "patch",
-                "pin",
-                "digest"
-            ],
-            "automerge": false
-        },
-        {
-            "matchDatasources": [
-                "pypi"
-            ],
-            "matchPackageNames": [
-                "pre-commit",
-                "flake8",
-                "pylint",
-                "mypy",
-                "pytest",
-                "pytest-cov",
-                "black"
-            ],
-            "groupName": "python-dev-deps",
-            "matchUpdateTypes": [
-                "minor",
-                "patch",
-                "pin",
-                "digest"
-            ],
-            "automerge": true,
-            "semanticCommitType": "chore"
-        },
-        {
-            "matchManagers": [
-                "pre-commit"
-            ],
-            "matchPackageNames": [
-                "hadolint/hadolint",
-                "asottile/pyupgrade",
-                "pre-commit/pre-commit-hooks",
-                "pre-commit/mirrors-mypy",
-                "PyCQA/flake8",
-                "pycqa/isort"
-            ],
-            "automerge": true,
-            "semanticCommitType": "chore",
-            "groupName": "pre-commit-hooks"
         }
     ]
 }
