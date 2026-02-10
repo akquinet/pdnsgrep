@@ -4,6 +4,9 @@
         "config:recommended",
         ":disableDependencyDashboard"
     ],
+    "schedule": [
+        "on monday"
+    ],
     "minimumReleaseAge": "14 days",
     "packageRules": [
         {
@@ -13,8 +16,8 @@
                 "digest",
                 "pin"
             ],
-            "automerge": true,
-            "automergeType": "branch"
+            "groupName": "all non-major dependencies",
+            "groupSlug": "all-non-major-updates"
         },
         {
             "matchUpdateTypes": [
