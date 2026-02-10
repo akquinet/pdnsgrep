@@ -6,11 +6,6 @@
     ],
     "packageRules": [
         {
-            "groupName": "all non-major dependencies",
-            "groupSlug": "all-non-major-updates",
-            "matchPackageNames": [
-                "*"
-            ],
             "matchUpdateTypes": [
                 "minor",
                 "patch",
@@ -21,14 +16,11 @@
             "automergeType": "branch"
         },
         {
-            "groupName": "all major dependencies",
-            "groupSlug": "all-major-updates",
-            "matchPackageNames": [
-                "*"
-            ],
             "matchUpdateTypes": [
                 "major"
             ],
+            "groupName": "all major dependencies",
+            "groupSlug": "all-major-updates",
             "semanticCommitType": "fix"
         }
     ]
