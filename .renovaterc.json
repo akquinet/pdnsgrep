@@ -4,6 +4,7 @@
         "config:recommended",
         ":disableDependencyDashboard"
     ],
+    "minimumReleaseAge": "14 days",
     "packageRules": [
         {
             "matchUpdateTypes": [
