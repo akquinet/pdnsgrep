@@ -223,4 +223,3 @@ func RecordsEqual(a, b []pdns.PDNSSearchResponseItem) bool {
 	}
 	return true
 }
-
