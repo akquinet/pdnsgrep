@@ -121,3 +121,61 @@ example.domain.;fw-1.example.domain.;A;IPv4 Address;3600;record
   ...
 ]
 ```
+
+### Sort Results
+
+```bash
+❯ pdnsgrep "fw*" --sort-by name
+❯ pdnsgrep "fw*" --sort-by zone
+❯ pdnsgrep "fw*" --sort-by ttl
+❯ pdnsgrep "fw*" --sort-by type
+```
+
+### Statistics Mode
+
+```bash
+❯ pdnsgrep "fw*" --stats
+Total Records: 42
+
+By Type:
+  A      28
+  AAAA   14
+
+By Zone:
+  example.domain.                12
+  example2.domain.               18
+  example3.domain.               12
+```
+
+### Watch Mode
+
+Continuously poll and display changes:
+
+```bash
+# Continuous print (default) - appends each update
+❯ pdnsgrep "app-server" --watch
+=== 14:30:15 ===
+Zone            Name                      Type  Content          TTL
+example.domain. app-server.example.domain. A    [IPv4 Address]   300
+
+=== 14:30:20 ===
+Zone            Name                      Type  Content          TTL
+example.domain. app-server.example.domain. A    [IPv4 Address]   300
+
+=== 14:30:25 (CHANGED) ===
+Zone            Name                      Type  Content          TTL
+example.domain. app-server.example.domain. A    [IPv4 Address]   300
+example.domain. app-server.example.domain. AAAA [IPv6 Address]   300
+
+# Clear screen mode - refreshes display in place
+❯ pdnsgrep "app-server" --watch --watch-clear
+
+# Only show output when changes are detected
+❯ pdnsgrep "app-server" --watch --watch-only-changed
+```
+
+Change the polling interval (default 5 seconds):
+
+```bash
+❯ pdnsgrep "app-server" --watch --watch-interval 10
+```

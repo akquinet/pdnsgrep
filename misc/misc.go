@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"text/tabwriter"
@@ -126,6 +127,71 @@ func OutputToTable(records []pdns.PDNSSearchResponseItem) {
 	}
 }
 
+func SortRecords(records []pdns.PDNSSearchResponseItem, sortBy string) error {
+	switch sortBy {
+	case "name":
+		sort.Slice(records, func(i, j int) bool {
+			return records[i].Name < records[j].Name
+		})
+	case "zone":
+		sort.Slice(records, func(i, j int) bool {
+			if records[i].Zone == records[j].Zone {
+				return records[i].Name < records[j].Name
+			}
+			return records[i].Zone < records[j].Zone
+		})
+	case "ttl":
+		sort.Slice(records, func(i, j int) bool {
+			if records[i].Ttl == records[j].Ttl {
+				return records[i].Name < records[j].Name
+			}
+			return records[i].Ttl < records[j].Ttl
+		})
+	case "type":
+		sort.Slice(records, func(i, j int) bool {
+			if records[i].Type == records[j].Type {
+				return records[i].Name < records[j].Name
+			}
+			return records[i].Type < records[j].Type
+		})
+	default:
+		return fmt.Errorf("invalid sort field: %s (valid options: name, zone, ttl, type)", sortBy)
+	}
+	return nil
+}
+
+func OutputStats(records []pdns.PDNSSearchResponseItem) {
+	typeCount := make(map[string]int)
+	zoneCount := make(map[string]int)
+
+	for _, r := range records {
+		typeCount[r.Type]++
+		zoneCount[r.Zone]++
+	}
+
+	fmt.Printf("Total Records: %d\n\n", len(records))
+
+	fmt.Println("By Type:")
+	types := make([]string, 0, len(typeCount))
+	for t := range typeCount {
+		types = append(types, t)
+	}
+	sort.Strings(types)
+	for _, t := range types {
+		fmt.Printf("  %-6s %d\n", t, typeCount[t])
+	}
+
+	fmt.Printf("\nBy Zone:\n")
+	zones := make([]string, 0, len(zoneCount))
+	for z := range zoneCount {
+		zones = append(zones, z)
+	}
+	sort.Strings(zones)
+	for _, z := range zones {
+		fmt.Printf("  %-30s %d\n", z, zoneCount[z])
+	}
+}
+
 func OutputToCSV(records []pdns.PDNSSearchResponseItem, delimiter string) {
 	fmt.Print(generateOutput(records, delimiter))
 }
@@ -144,3 +210,17 @@ func OutputToJSON(records []pdns.PDNSSearchResponseItem) {
 
 	fmt.Println(string(output))
 }
+
+func RecordsEqual(a, b []pdns.PDNSSearchResponseItem) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i].Name != b[i].Name || a[i].Type != b[i].Type ||
+			a[i].Content != b[i].Content || a[i].Ttl != b[i].Ttl {
+			return false
+		}
+	}
+	return true
+}
+

@@ -42,20 +42,26 @@ var rootCmd = &cobra.Command{
 		} else if viper.GetBool("record") {
 			objectType = "record"
 		}
-		ctx := context.Background()
-		found, err := pdns.GetPDNSRecords(ctx, client, args, objectType)
-		if err != nil {
-			log.Fatal(err)
+
+		if viper.GetBool("watch") {
+			watchMode(client, args, objectType)
+			return
 		}
 
-		rType := viper.GetString("type")
-		if rType != "" {
-			found = pdns.FilterRecordsOnType(found, rType)
+		ctx := context.Background()
+		found, err := fetchAndProcessRecords(ctx, client, args, objectType)
+		if err != nil {
+			log.Fatal(err)
 		}
 
 		if len(found) == 0 {
 			fmt.Println("Nothing found")
 			os.Exit(0)
+		}
+
+		if viper.GetBool("stats") {
+			misc.OutputStats(found)
+			return
 		}
 
 		outputResults(found)
@@ -75,6 +81,84 @@ func outputResults(records []pdns.PDNSSearchResponseItem) {
 	default:
 		log.Errorf("Output format %s not known\n", viper.GetString("output"))
 		log.Exit(1)
+	}
+}
+
+func fetchAndProcessRecords(ctx context.Context, client *pdns.PDNSAPI, args []string, objectType string) ([]pdns.PDNSSearchResponseItem, error) {
+	found, err := pdns.GetPDNSRecords(ctx, client, args, objectType)
+	if err != nil {
+		return nil, err
+	}
+
+	rType := viper.GetString("type")
+	if rType != "" {
+		found = pdns.FilterRecordsOnType(found, rType)
+	}
+
+	sortBy := viper.GetString("sort-by")
+	if sortBy != "" {
+		if err := misc.SortRecords(found, sortBy); err != nil {
+			return nil, err
+		}
+	}
+
+	return found, nil
+}
+
+func watchMode(client *pdns.PDNSAPI, args []string, objectType string) {
+	interval := viper.GetInt("watch-interval")
+	if interval < 1 {
+		interval = 5
+	}
+
+	clearScreen := viper.GetBool("watch-clear")
+	onlyChanged := viper.GetBool("watch-only-changed")
+	var previous []pdns.PDNSSearchResponseItem
+	ticker := time.NewTicker(time.Duration(interval) * time.Second)
+	defer ticker.Stop()
+
+	ctx := context.Background()
+
+	fetchAndDisplay := func() ([]pdns.PDNSSearchResponseItem, bool) {
+		found, err := fetchAndProcessRecords(ctx, client, args, objectType)
+		if err != nil {
+			log.Error(err)
+			return previous, false
+		}
+
+		changed := !misc.RecordsEqual(previous, found)
+		return found, changed
+	}
+
+	// Initial fetch
+	found, _ := fetchAndDisplay()
+	if clearScreen {
+		fmt.Print("\033[2J\033[H")
+	}
+	fmt.Printf("=== %s ===\n", time.Now().Format("15:04:05"))
+	outputResults(found)
+	previous = found
+
+	for range ticker.C {
+		found, changed := fetchAndDisplay()
+
+		if onlyChanged && !changed {
+			continue
+		}
+
+		status := ""
+		if changed {
+			status = " (CHANGED)"
+			previous = found
+		}
+
+		if clearScreen {
+			fmt.Print("\033[2J\033[H")
+			fmt.Printf("=== %s%s ===\n", time.Now().Format("15:04:05"), status)
+		} else {
+			fmt.Printf("\n=== %s%s ===\n", time.Now().Format("15:04:05"), status)
+		}
+		outputResults(found)
 	}
 }
 
@@ -173,6 +257,12 @@ func init() {
 	rootCmd.Flags().StringP("type", "t", "", "filter type of record (A, AAAA, TXT ....)")
 	rootCmd.Flags().IntP("timeout", "", 10, "timeout in seconds for API requests")
 	rootCmd.Flags().String("show-completion", "", "show completion (bash, zsh, fish, powershell)")
+	rootCmd.Flags().StringP("sort-by", "s", "", "sort results by field (name|zone|ttl|type)")
+	rootCmd.Flags().Bool("stats", false, "show statistics instead of full output")
+	rootCmd.Flags().BoolP("watch", "w", false, "continuously poll and show changes")
+	rootCmd.Flags().Int("watch-interval", 5, "interval in seconds for watch mode")
+	rootCmd.Flags().Bool("watch-clear", false, "clear screen on each watch update (default: continuous print)")
+	rootCmd.Flags().Bool("watch-only-changed", false, "only show output when changes are detected")
 
 	viper.AutomaticEnv()
 	viper.SetEnvPrefix("PDNSGREP")

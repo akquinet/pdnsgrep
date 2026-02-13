@@ -157,7 +157,7 @@ func GetPDNSRecords(ctx context.Context, client *PDNSAPI, search []string, objec
 }
 
 // CheckStringOnlyHostname returns true if the input
-// is only ns1 and not ns1.akqui.net or ns1*
+// is only ns1 and not ns1.example.com or ns1*
 func CheckStringOnlyHostname(input string) bool {
 	if !strings.Contains(input, "*") &&
 		!strings.Contains(input, ".") &&
