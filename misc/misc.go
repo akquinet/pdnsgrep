@@ -39,14 +39,14 @@ func formatRecord(record pdns.PDNSSearchResponseItem, delimiter string) string {
 }
 
 func generateOutput(records []pdns.PDNSSearchResponseItem, delimiter string) string {
-	output := ""
+	var output strings.Builder
 	if !viper.GetBool("no-header") {
-		output += strings.Join(headers, delimiter) + "\n"
+		output.WriteString(strings.Join(headers, delimiter) + "\n")
 	}
 	for _, r := range records {
-		output += formatRecord(r, delimiter) + "\n"
+		output.WriteString(formatRecord(r, delimiter) + "\n")
 	}
-	return output
+	return output.String()
 }
 
 func OutputToStdout(records []pdns.PDNSSearchResponseItem) {

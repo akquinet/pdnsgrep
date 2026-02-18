@@ -100,7 +100,7 @@ func NewPDNSAPI(url, apiKey string) *PDNSAPI {
 	}
 }
 
-func decodeResponse(resp *http.Response, v interface{}) error {
+func decodeResponse(resp *http.Response, v any) error {
 	defer resp.Body.Close()
 	return json.NewDecoder(resp.Body).Decode(v)
 }
@@ -111,7 +111,6 @@ func GetPDNSRecords(ctx context.Context, client *PDNSAPI, search []string, objec
 
 	// Start a goroutine for each search term
 	for _, term := range search {
-		term := term
 		if CheckStringOnlyHostname(term) {
 			term = "*" + term + "*"
 		} else {
