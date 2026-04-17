@@ -12,6 +12,8 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+const maxSearchResults = 9999999
+
 type PDNSSearchResponseItem struct {
 	Name       string `json:"name"`
 	Type       string `json:"type"`
@@ -36,7 +38,7 @@ func (p *PDNSAPI) Search(query string, objectType string) ([]PDNSSearchResponseI
 	req, err := p.newRequest("GET", "/api/v1/servers/localhost/search-data", map[string]any{
 		"q":           query,
 		"object_type": objectType,
-		"max":         9999999,
+		"max":         maxSearchResults,
 	})
 	if err != nil {
 		return nil, err
@@ -155,15 +157,10 @@ func GetPDNSRecords(ctx context.Context, client *PDNSAPI, search []string, objec
 	return combinedRecords, nil
 }
 
-// CheckStringOnlyHostname returns true if the input
-// is only ns1 and not ns1.example.com or ns1*
+// CheckStringOnlyHostname returns true if the input is only a hostname label
+// (e.g. "ns1") and not a FQDN, IP, or wildcard pattern.
 func CheckStringOnlyHostname(input string) bool {
-	if !strings.Contains(input, "*") &&
-		!strings.Contains(input, ".") &&
-		!strings.Contains(input, "?") {
-		return true
-	}
-	return false
+	return !strings.ContainsAny(input, "*.?")
 }
 
 func FilterRecordsOnType(records []PDNSSearchResponseItem, rType string) []PDNSSearchResponseItem {

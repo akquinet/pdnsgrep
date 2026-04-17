@@ -116,6 +116,55 @@ func TestRecordsEqual(t *testing.T) {
 	})
 }
 
+func TestDiffRecords(t *testing.T) {
+	base := []pdns.PDNSSearchResponseItem{
+		{Zone: "example.com.", Name: "a.example.com.", Type: "A", Content: "10.0.0.1", Ttl: 300},
+		{Zone: "example.com.", Name: "b.example.com.", Type: "AAAA", Content: "2001:db8::1", Ttl: 3600},
+	}
+
+	t.Run("no changes", func(t *testing.T) {
+		added, removed := DiffRecords(base, base)
+		if len(added) != 0 || len(removed) != 0 {
+			t.Errorf("expected no diff, got added=%v removed=%v", added, removed)
+		}
+	})
+
+	t.Run("record added", func(t *testing.T) {
+		curr := append(base, pdns.PDNSSearchResponseItem{Zone: "example.com.", Name: "c.example.com.", Type: "A", Content: "10.0.0.3", Ttl: 300})
+		added, removed := DiffRecords(base, curr)
+		if len(added) != 1 || added[0].Name != "c.example.com." {
+			t.Errorf("expected 1 added record, got %v", added)
+		}
+		if len(removed) != 0 {
+			t.Errorf("expected no removed records, got %v", removed)
+		}
+	})
+
+	t.Run("record removed", func(t *testing.T) {
+		added, removed := DiffRecords(base, base[:1])
+		if len(removed) != 1 || removed[0].Name != "b.example.com." {
+			t.Errorf("expected 1 removed record, got %v", removed)
+		}
+		if len(added) != 0 {
+			t.Errorf("expected no added records, got %v", added)
+		}
+	})
+
+	t.Run("content changed appears as remove+add", func(t *testing.T) {
+		curr := []pdns.PDNSSearchResponseItem{
+			{Zone: "example.com.", Name: "a.example.com.", Type: "A", Content: "10.0.0.99", Ttl: 300},
+			{Zone: "example.com.", Name: "b.example.com.", Type: "AAAA", Content: "2001:db8::1", Ttl: 3600},
+		}
+		added, removed := DiffRecords(base, curr)
+		if len(added) != 1 || added[0].Content != "10.0.0.99" {
+			t.Errorf("expected 1 added record with new IP, got %v", added)
+		}
+		if len(removed) != 1 || removed[0].Content != "10.0.0.1" {
+			t.Errorf("expected 1 removed record with old IP, got %v", removed)
+		}
+	})
+}
+
 func TestOutputStats(t *testing.T) {
 	records := []pdns.PDNSSearchResponseItem{
 		{Name: "a.example.com.", Type: "A", Zone: "example.com.", Ttl: 300},

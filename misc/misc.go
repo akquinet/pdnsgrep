@@ -31,6 +31,8 @@ var (
 	contentColor = color.New(color.FgWhite)
 	ttlColor     = color.New(color.FgMagenta)
 	objectColor  = color.New(color.FgBlue)
+	addColor     = color.New(color.FgGreen)
+	removeColor  = color.New(color.FgRed)
 )
 
 // Helper function to format record as string (for non-colored output)
@@ -54,16 +56,12 @@ func OutputToStdout(records []pdns.PDNSSearchResponseItem) {
 }
 
 func OutputToTable(records []pdns.PDNSSearchResponseItem) {
-	// Check if colors should be disabled
-	if viper.GetBool("no-color") {
-		// Use the original non-colored output with standard tabwriter
+	if color.NoColor {
 		writer := tabwriter.NewWriter(os.Stdout, 0, 8, 1, ' ', 0)
 		defer writer.Flush()
-
 		if !viper.GetBool("no-header") {
 			fmt.Fprintln(writer, strings.Join(headers, TabDelimiter))
 		}
-
 		for _, r := range records {
 			fmt.Fprintln(writer, formatRecord(r, TabDelimiter))
 		}
@@ -196,30 +194,53 @@ func OutputToCSV(records []pdns.PDNSSearchResponseItem, delimiter string) {
 	fmt.Print(generateOutput(records, delimiter))
 }
 
-// OutputToJSON outputs records in JSON format
 func OutputToJSON(records []pdns.PDNSSearchResponseItem) {
-	var output []byte
-	var err error
-
-	output, err = json.MarshalIndent(records, "", "  ")
-
+	output, err := json.MarshalIndent(records, "", "  ")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error marshaling to JSON: %v\n", err)
 		os.Exit(1)
 	}
-
 	fmt.Println(string(output))
 }
 
 func RecordsEqual(a, b []pdns.PDNSSearchResponseItem) bool {
-	if len(a) != len(b) {
-		return false
+	added, removed := DiffRecords(a, b)
+	return len(added) == 0 && len(removed) == 0
+}
+
+func recordKey(r pdns.PDNSSearchResponseItem) string {
+	return fmt.Sprintf("%s|%s|%s|%s|%d", r.Zone, r.Name, r.Type, r.Content, r.Ttl)
+}
+
+// DiffRecords returns records added and removed between prev and curr.
+func DiffRecords(prev, curr []pdns.PDNSSearchResponseItem) (added, removed []pdns.PDNSSearchResponseItem) {
+	prevSet := make(map[string]struct{}, len(prev))
+	for _, r := range prev {
+		prevSet[recordKey(r)] = struct{}{}
 	}
-	for i := range a {
-		if a[i].Name != b[i].Name || a[i].Type != b[i].Type ||
-			a[i].Content != b[i].Content || a[i].Ttl != b[i].Ttl {
-			return false
+	currSet := make(map[string]struct{}, len(curr))
+	for _, r := range curr {
+		currSet[recordKey(r)] = struct{}{}
+	}
+	for _, r := range curr {
+		if _, ok := prevSet[recordKey(r)]; !ok {
+			added = append(added, r)
 		}
 	}
-	return true
+	for _, r := range prev {
+		if _, ok := currSet[recordKey(r)]; !ok {
+			removed = append(removed, r)
+		}
+	}
+	return
+}
+
+// OutputDiff prints removed records in red and added records in green.
+func OutputDiff(added, removed []pdns.PDNSSearchResponseItem) {
+	for _, r := range removed {
+		removeColor.Printf("- %s\n", formatRecord(r, SpaceDelimiter))
+	}
+	for _, r := range added {
+		addColor.Printf("+ %s\n", formatRecord(r, SpaceDelimiter))
+	}
 }

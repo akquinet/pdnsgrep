@@ -8,6 +8,7 @@ import (
 
 	"github.com/akquinet/pdnsgrep/misc"
 	"github.com/akquinet/pdnsgrep/pdns"
+	"github.com/fatih/color"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -33,14 +34,11 @@ var rootCmd = &cobra.Command{
 		// We don't need to check for empty args anymore since we've set MinimumNArgs(1)
 
 		client := createPDNSClient()
+		objectType := resolveObjectType()
 
-		objectType := "all"
-		if viper.GetBool("zone") {
-			objectType = "zone"
-		} else if viper.GetBool("comment") {
-			objectType = "comment"
-		} else if viper.GetBool("record") {
-			objectType = "record"
+		// Auto-enable watch if any watch sub-flags are used
+		if viper.GetBool("watch-changes") || viper.IsSet("watch-interval") || viper.GetBool("watch-clear") {
+			viper.Set("watch", true)
 		}
 
 		if viper.GetBool("watch") {
@@ -112,7 +110,7 @@ func watchMode(client *pdns.PDNSAPI, args []string, objectType string) {
 	}
 
 	clearScreen := viper.GetBool("watch-clear")
-	onlyChanged := viper.GetBool("watch-only-changed")
+	watchChanges := viper.GetBool("watch-changes")
 	var previous []pdns.PDNSSearchResponseItem
 	ticker := time.NewTicker(time.Duration(interval) * time.Second)
 	defer ticker.Stop()
@@ -142,14 +140,13 @@ func watchMode(client *pdns.PDNSAPI, args []string, objectType string) {
 	for range ticker.C {
 		found, changed := fetchAndDisplay()
 
-		if onlyChanged && !changed {
+		if watchChanges && !changed {
 			continue
 		}
 
 		status := ""
 		if changed {
 			status = " (CHANGED)"
-			previous = found
 		}
 
 		if clearScreen {
@@ -158,21 +155,39 @@ func watchMode(client *pdns.PDNSAPI, args []string, objectType string) {
 		} else {
 			fmt.Printf("\n=== %s%s ===\n", time.Now().Format("15:04:05"), status)
 		}
-		outputResults(found)
+
+		if watchChanges && changed {
+			added, removed := misc.DiffRecords(previous, found)
+			misc.OutputDiff(added, removed)
+		} else {
+			outputResults(found)
+		}
+
+		if changed {
+			previous = found
+		}
 	}
 }
 
 func createPDNSClient() *pdns.PDNSAPI {
 	client := pdns.NewPDNSAPI(viper.GetString("url"), viper.GetString("token"))
-
-	// Set timeout if specified
-	if viper.IsSet("timeout") {
-		timeout := time.Duration(viper.GetInt("timeout")) * time.Second
-		client.Timeout = timeout
-		client.Client.Timeout = timeout
-	}
-
+	timeout := time.Duration(viper.GetInt("timeout")) * time.Second
+	client.Timeout = timeout
+	client.Client.Timeout = timeout
 	return client
+}
+
+func resolveObjectType() string {
+	switch {
+	case viper.GetBool("zone"):
+		return "zone"
+	case viper.GetBool("comment"):
+		return "comment"
+	case viper.GetBool("record"):
+		return "record"
+	default:
+		return "all"
+	}
 }
 
 func ShowCompletions(cmd *cobra.Command, shell string) {
@@ -239,6 +254,9 @@ func validateConfigValues() {
 	if token := viper.GetString("token"); token == "" {
 		log.Fatal("Token needs to be defined")
 	}
+	if viper.GetBool("no-color") {
+		color.NoColor = true
+	}
 }
 
 func init() {
@@ -262,7 +280,7 @@ func init() {
 	rootCmd.Flags().BoolP("watch", "w", false, "continuously poll and show changes")
 	rootCmd.Flags().Int("watch-interval", 5, "interval in seconds for watch mode")
 	rootCmd.Flags().Bool("watch-clear", false, "clear screen on each watch update (default: continuous print)")
-	rootCmd.Flags().Bool("watch-only-changed", false, "only show output when changes are detected")
+	rootCmd.Flags().Bool("watch-changes", false, "only show diff when changes are detected")
 
 	viper.AutomaticEnv()
 	viper.SetEnvPrefix("PDNSGREP")
