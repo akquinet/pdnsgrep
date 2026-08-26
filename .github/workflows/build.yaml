@@ -17,7 +17,13 @@ jobs:
           go-version: "1.26"
 
       - name: Run tests
-        run: go test ./... -v
+        run: go test ./... -v -coverprofile=coverage.out
+
+      - name: Upload coverage to Codecov
+        if: github.ref == 'refs/heads/main'
+        uses: codecov/codecov-action@0fb7174895f61a3b6b78fc075e0cd60383518dac # v5.5.5
+        with:
+          files: coverage.out
 
   pre-commit:
     runs-on: ubuntu-latest
