@@ -1,7 +1,6 @@
 # PDNS Grep
 
 [![GitHub Release](https://img.shields.io/github/v/release/akquinet/pdnsgrep)](https://github.com/akquinet/pdnsgrep/releases/latest)
-[![Codecov](https://codecov.io/gh/akquinet/pdnsgrep/branch/main/graph/badge.svg)](https://codecov.io/gh/akquinet/pdnsgrep)
 
 Search through PowerDNS records via API.
 
