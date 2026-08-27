@@ -1,7 +1,5 @@
 # PDNS Grep
 
-[![GitHub Release](https://img.shields.io/github/v/release/akquinet/pdnsgrep)](https://github.com/akquinet/pdnsgrep/releases/latest)
-
 Search through PowerDNS records via API.
 
 The wildcard `*` can be used as a placeholder in search_term and the `?` character can be used as a placeholder for a single character.
