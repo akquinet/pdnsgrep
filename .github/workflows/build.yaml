@@ -48,7 +48,7 @@ jobs:
         run: make setup
 
       - name: Run pre-commit
-        run: make pre-commit-all
+        run: make lint
         env:
           SKIP: "no-commit-to-branch"
 
